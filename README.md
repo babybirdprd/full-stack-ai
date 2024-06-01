@@ -1,63 +1,213 @@
-# Full stack AI
+# Ollama JavaScript Library
 
-Build a full stack Next.js app from an AI prompt.
-
-Built by [Elie](https://twitter.com/elie2222). Also check out [Inbox Zero](https://getinboxzero.com), an open source email app to automate your emails and reach inbox zero fast.
-
-## Demo Video
-
-[![Full Stack AI demo](/assets/video-thumbnail.png)](https://youtu.be/DptvWuRfF2M)
-
-## What It Does
-
-Full Stack AI, `fsai`, is a CLI that uses AI to build a full-stack app for you.
-
-The AI will:
-
-* Generate a Next.js app with TypeScript and Tailwind
-* Add shadcn/ui for frontend components
-* Generate pages to create/update/delete data
-* Generate a Prisma/Drizzle schema
-* Uses Postgres/MySQL/SQLite for the database
-* Add auth via NextAuth.js with GitHub/Discord/Google/Apple log in supported
-* Or add auth with Clerk/Lucia/Kinde
-* Add account screen to change settings
-* Add Stripe for payments
-* Add Resend to send transactional emails
-* Generate CRUD APIs
-* Add light/dark mode
-
-It can use the package manager of your choice. It defaults to `pnpm` unless you prompt the AI otherwise.
-
-### Experimentation
-
-We've been experimenting with a more general AI coder called [Aleph0](https://github.com/alephmatic/aleph0) which is in beta.
+The Ollama JavaScript library provides the easiest way to integrate your JavaScript project with [Ollama](https://github.com/jmorganca/ollama).
 
 ## Getting Started
 
-```bash
-export OPENAI_API_KEY=...
-npx fsai gen "Build a clone of Twitter called StackPrompt where people prompt instead of tweet. Allow users to follow one another and to like prompts. Use GitHub for log in. Charge users a monthly fee for premium functionality."
+```
+npm i ollama
 ```
 
-Then `cd` into the newly created app folder, set the environment variables and in the `.env` file and run `npm run dev` to see your app live in the browser at [http://localhost:3000](http://localhost:3000).
+## Usage
 
-You can install the package globally and run as follows:
+```javascript
+import ollama from 'ollama'
 
-```bash
-pnpm i -g fsai
-export OPENAI_API_KEY=...
-fsai gen "Build a clone of Twitter called StackPrompt where people prompt instead of tweet. Allow users to follow one another and to like prompts. Use GitHub for log in. Charge users a monthly fee for premium functionality."
+const response = await ollama.chat({
+  model: 'llama2',
+  messages: [{ role: 'user', content: 'Why is the sky blue?' }],
+})
+console.log(response.message.content)
 ```
 
-Under the hood this project uses [Kirimase](https://github.com/nicoalbanese/kirimase).
+### Browser Usage
+To use the library without node, import the browser module.
+```javascript
+import ollama from 'ollama/browser'
+```
 
-## Run locally
+## Streaming responses
 
-If you want to clone the repo and run it locally:
+Response streaming can be enabled by setting `stream: true`, modifying function calls to return an `AsyncGenerator` where each part is an object in the stream.
 
-```bash
-pnpm i
-export OPENAI_API_KEY=...
-npx tsx src/index.ts gen "Build a clone of Twitter called StackPrompt where people prompt instead of tweet. Allow users to follow one another and to like prompts. Use GitHub for log in. Charge users a monthly fee for premium functionality."
+```javascript
+import ollama from 'ollama'
+
+const message = { role: 'user', content: 'Why is the sky blue?' }
+const response = await ollama.chat({ model: 'llama2', messages: [message], stream: true })
+for await (const part of response) {
+  process.stdout.write(part.message.content)
+}
+```
+
+## Create
+
+```javascript
+import ollama from 'ollama'
+
+const modelfile = `
+FROM llama2
+SYSTEM "You are mario from super mario bros."
+`
+await ollama.create({ model: 'example', modelfile: modelfile })
+```
+
+## API
+
+The Ollama JavaScript library's API is designed around the [Ollama REST API](https://github.com/jmorganca/ollama/blob/main/docs/api.md)
+
+### chat
+
+```javascript
+ollama.chat(request)
+```
+
+- `request` `<Object>`: The request object containing chat parameters.
+
+  - `model` `<string>` The name of the model to use for the chat.
+  - `messages` `<Message[]>`: Array of message objects representing the chat history.
+    - `role` `<string>`: The role of the message sender ('user', 'system', or 'assistant').
+    - `content` `<string>`: The content of the message.
+    - `images` `<Uint8Array[] | string[]>`: (Optional) Images to be included in the message, either as Uint8Array or base64 encoded strings.
+  - `format` `<string>`: (Optional) Set the expected format of the response (`json`).
+  - `stream` `<boolean>`: (Optional) When true an `AsyncGenerator` is returned.
+  - `keep_alive` `<string | number>`: (Optional) How long to keep the model loaded.
+  - `options` `<Options>`: (Optional) Options to configure the runtime.
+
+- Returns: `<ChatResponse>`
+
+### generate
+
+```javascript
+ollama.generate(request)
+```
+
+- `request` `<Object>`: The request object containing generate parameters.
+  - `model` `<string>` The name of the model to use for the chat.
+  - `prompt` `<string>`: The prompt to send to the model.
+  - `system` `<string>`: (Optional) Override the model system prompt.
+  - `template` `<string>`: (Optional) Override the model template.
+  - `raw` `<boolean>`: (Optional) Bypass the prompt template and pass the prompt directly to the model.
+  - `images` `<Uint8Array[] | string[]>`: (Optional) Images to be included, either as Uint8Array or base64 encoded strings.
+  - `format` `<string>`: (Optional) Set the expected format of the response (`json`).
+  - `stream` `<boolean>`: (Optional) When true an `AsyncGenerator` is returned.
+  - `keep_alive` `<string | number>`: (Optional) How long to keep the model loaded.
+  - `options` `<Options>`: (Optional) Options to configure the runtime.
+- Returns: `<GenerateResponse>`
+
+### pull
+
+```javascript
+ollama.pull(request)
+```
+
+- `request` `<Object>`: The request object containing pull parameters.
+  - `model` `<string>` The name of the model to pull.
+  - `insecure` `<boolean>`: (Optional) Pull from servers whose identity cannot be verified.
+  - `stream` `<boolean>`: (Optional) When true an `AsyncGenerator` is returned.
+- Returns: `<ProgressResponse>`
+
+### push
+
+```javascript
+ollama.push(request)
+```
+
+- `request` `<Object>`: The request object containing push parameters.
+  - `model` `<string>` The name of the model to push.
+  - `insecure` `<boolean>`: (Optional) Push to servers whose identity cannot be verified.
+  - `stream` `<boolean>`: (Optional) When true an `AsyncGenerator` is returned.
+- Returns: `<ProgressResponse>`
+
+### create
+
+```javascript
+ollama.create(request)
+```
+
+- `request` `<Object>`: The request object containing create parameters.
+  - `model` `<string>` The name of the model to create.
+  - `path` `<string>`: (Optional) The path to the Modelfile of the model to create.
+  - `modelfile` `<string>`: (Optional) The content of the Modelfile to create.
+  - `stream` `<boolean>`: (Optional) When true an `AsyncGenerator` is returned.
+- Returns: `<ProgressResponse>`
+
+### delete
+
+```javascript
+ollama.delete(request)
+```
+
+- `request` `<Object>`: The request object containing delete parameters.
+  - `model` `<string>` The name of the model to delete.
+- Returns: `<StatusResponse>`
+
+### copy
+
+```javascript
+ollama.copy(request)
+```
+
+- `request` `<Object>`: The request object containing copy parameters.
+  - `source` `<string>` The name of the model to copy from.
+  - `destination` `<string>` The name of the model to copy to.
+- Returns: `<StatusResponse>`
+
+### list
+
+```javascript
+ollama.list()
+```
+
+- Returns: `<ListResponse>`
+
+### show
+
+```javascript
+ollama.show(request)
+```
+
+- `request` `<Object>`: The request object containing show parameters.
+  - `model` `<string>` The name of the model to show.
+  - `system` `<string>`: (Optional) Override the model system prompt returned.
+  - `template` `<string>`: (Optional) Override the model template returned.
+  - `options` `<Options>`: (Optional) Options to configure the runtime.
+- Returns: `<ShowResponse>`
+
+### embeddings
+
+```javascript
+ollama.embeddings(request)
+```
+
+- `request` `<Object>`: The request object containing embedding parameters.
+  - `model` `<string>` The name of the model used to generate the embeddings.
+  - `prompt` `<string>`: The prompt used to generate the embedding.
+  - `keep_alive` `<string | number>`: (Optional) How long to keep the model loaded.
+  - `options` `<Options>`: (Optional) Options to configure the runtime.
+- Returns: `<EmbeddingsResponse>`
+
+## Custom client
+
+A custom client can be created with the following fields:
+
+- `host` `<string>`: (Optional) The Ollama host address. Default: `"http://127.0.0.1:11434"`.
+- `fetch` `<Object>`: (Optional) The fetch library used to make requests to the Ollama host.
+
+```javascript
+import { Ollama } from 'ollama'
+
+const ollama = new Ollama({ host: 'http://localhost:11434' })
+const response = await ollama.chat({
+  model: 'llama2',
+  messages: [{ role: 'user', content: 'Why is the sky blue?' }],
+})
+```
+
+## Building
+
+To build the project files run:
+
+```sh
+npm run build
 ```
