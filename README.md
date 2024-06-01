@@ -1,3 +1,10 @@
+## Local
+```
+pnpm i
+export OPENAI_API_KEY=...
+npx tsx src/index.ts gen "Build a clone of Twitter called StackPrompt where people prompt instead of tweet. Allow users to follow one another and to like prompts. Use GitHub for log in. Charge users a monthly fee for premium functionality."
+```
+
 # Ollama JavaScript Library
 
 The Ollama JavaScript library provides the easiest way to integrate your JavaScript project with [Ollama](https://github.com/jmorganca/ollama).
